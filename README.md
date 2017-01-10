@@ -66,6 +66,7 @@
     
 ### 默认值
 * 资源url的默认值是 @RequestMapping(value = "/xxx/test") 中的 value值,可以自定义url="abc/test"。
+
 >当url为默认值时，可以选择是否去掉第一个位置出现的 '/'（默认不去掉）;
 配置CustomRequestMappingHandlerMapping注入 filterUrlStartSlash = true;
 效果为 @RequestMapping(value = "/xxx/test") 得到的url为 xxx/test.
