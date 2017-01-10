@@ -1,67 +1,68 @@
 ##基于spring mvc 的自动加载权限系统中的资源到数据库
 * 和spring-mvc绑定，暂时只适用使用spring-mvc系统。数据库操作使用spring-jdbc,需要有spring-jdbc配置。
 * 借助于springmvc 中 RequestMappingHandlerMapping项目启动时扫描所有的方法, 自定义一个类继承它, 在扫描方法的同时去把自定义注解中的资源load到静态变量中。
+* 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称来唯一区分
 
 ###Getting Start
-1.在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
+1. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
 
-    <bean id="customRequestMappingHandlerMapping" class="com.wen.CustomRequestMappingHandlerMapping"/>
-    <bean class="com.wen.AutoInjectResource">
-        <property name="jdbcTemplate" ref="jdbcTemplate"/>
-        <property name="customRequestMappingHandlerMapping" ref="customRequestMappingHandlerMapping"/>
-    </bean>
+        <bean id="customRequestMappingHandlerMapping" class="com.wen.CustomRequestMappingHandlerMapping"/>
+        <bean class="com.wen.AutoInjectResource">
+            <property name="jdbcTemplate" ref="jdbcTemplate"/>
+            <property name="customRequestMappingHandlerMapping" ref="customRequestMappingHandlerMapping"/>
+        </bean>
 注意:
     applicationContext.xml 需要有jdbcTemplate(spring-jdbc)注入,示例如下
     
-    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
-        <property name="dataSource" ref="dataSource" />
-    </bean>
-2.需要自动保存到数据库的资源,在controller方法上加入
+        <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+            <property name="dataSource" ref="dataSource" />
+        </bean>
+2. 需要自动保存到数据库的资源,在controller方法上加入
 
-    @InjectResource(name="resourceName", parentName="resourceParentName")
+        @InjectResource(name="resourceName", parentName="resourceParentName")
 
-3.保存资源到数据库
+3. 保存资源到数据库
     
-    // 注入
-    @Inject
-    private AutoInjectResource autoInjectResource;
-    
-    // 调用方法
-    autoInjectResource.saveResource();
+        // 注入
+        @Inject
+        private AutoInjectResource autoInjectResource;
+        
+        // 调用方法
+        autoInjectResource.saveResource();
     
 ### 使用文档
-一、配置自己数据库的资源表的表名称以及字段名称
-第一种方式:在classpath路径下加入 auto_inject_resource.properties 文件。如下该文件示例
+1. 配置自己数据库的资源表的表名称以及字段名称
+>第一种方式:在classpath路径下加入 auto_inject_resource.properties 文件。如下该文件示例
     
-    # 资源表名
-    resource.table.name=m_resource
-    # 资源表对应url的列名
-    table.column.url=RESOURCE_STRING
-    # 资源表对应名称的列名
-    table.column.name=RESOURCE_NAME
-    # 资源表对应排序列名
-    table.column.power=SORT_INDEX
-    # 资源表对应级别列名
-    table.column.grade=GRADE
-    # 对应父节点字段列名
-    table.column.parent=PARENT_ID
-    # 父节点字段的取值来源字段列名
-    table.column.parent.source=RESOURCE_ID
-第二种方式属性注入
+        # 资源表名
+        resource.table.name=m_resource
+        # 资源表对应url的列名
+        table.column.url=RESOURCE_STRING
+        # 资源表对应名称的列名
+        table.column.name=RESOURCE_NAME
+        # 资源表对应排序列名
+        table.column.power=SORT_INDEX
+        # 资源表对应级别列名
+        table.column.grade=GRADE
+        # 对应父节点字段列名
+        table.column.parent=PARENT_ID
+        # 父节点字段的取值来源字段列名
+        table.column.parent.source=RESOURCE_ID
+>第二种方式:spring属性注入
     
-    <bean class="com.wen.AutoInjectResource">
-        <property name="tableName" value="m_resource"/>
-        <property name="columnUrl" value="RESOURCE_STRING"/>
-        <property name="columnName" value="RESOURCE_NAME"/>
-        <property name="columnPower" value="SORT_INDEX"/>
-        <property name="columnGrade" value="GRADE"/>
-        <property name="columnParent" value="PARENT_ID"/>
-        <property name="columnParentSource" value="RESOURCE_ID"/>
-    </bean>
-二、可以在@InjectResource customProps中 加入一些自定义的数据库字段和对应的值。
+        <bean class="com.wen.AutoInjectResource">
+            <property name="tableName" value="m_resource"/>
+            <property name="columnUrl" value="RESOURCE_STRING"/>
+            <property name="columnName" value="RESOURCE_NAME"/>
+            <property name="columnPower" value="SORT_INDEX"/>
+            <property name="columnGrade" value="GRADE"/>
+            <property name="columnParent" value="PARENT_ID"/>
+            <property name="columnParentSource" value="RESOURCE_ID"/>
+        </bean>
+2. 可以在@InjectResource customProps中 加入一些自定义的数据库字段和对应的值。
     customProps 为数组, 数组中的值的格式为key:value, key为资源表中的字段名,value为这个字段的值
     
-    @InjectResource(name = "resourceName", parentName = "resourceParentName", customProps = {"key1:value1", "key2:value2"})
+        @InjectResource(name = "resourceName", parentName = "resourceParentName", customProps = {"key1:value1", "key2:value2"})
     
 ### 默认值
 * 资源url的默认值是 @RequestMapping(value = "/xxx/test") 中的 value值,可以自定义url="abc/test"。
@@ -72,8 +73,8 @@
 * 资源grade级别默认为1, 可自定义
     
 ### 缺陷
-1.设计的资源表必须是要以资源名称来唯一区别的
-2.资源名称如果修改，下次这个资源还会再次保存在数据库
+* 设计的资源表必须是要以资源名称来唯一区别的
+* 资源名称如果修改，下次这个资源还会再次保存在数据库
 
 ### DEMO
    我的数据库资源表结构如下
