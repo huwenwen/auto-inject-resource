@@ -70,6 +70,7 @@
 >当url为默认值时，可以选择是否去掉第一个位置出现的 '/'（默认不去掉）;
 配置CustomRequestMappingHandlerMapping注入 filterUrlStartSlash = true;
 效果为 @RequestMapping(value = "/xxx/test") 得到的url为 xxx/test.
+
 * 资源power排序默认是99, 可自定义
 * 资源grade级别默认为1, 可自定义
     
