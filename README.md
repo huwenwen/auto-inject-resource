@@ -4,7 +4,21 @@
 * 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称来唯一区分
 
 ###Getting Start
-1. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
+1. maven 配置
+        
+        <repositories>
+            <repository>
+                <id>wenwen</id>
+                <url>https://wenwen.bintray.com/mvn-repo/</url>
+            </repository>
+        </repositories>
+        
+        <dependency>
+            <groupId>com.wen</groupId>
+            <artifactId>auto_inject_resource</artifactId>
+            <version>0.0.1-spring</version>
+        </dependency>
+2. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
 
         <bean id="customRequestMappingHandlerMapping" class="com.wen.CustomRequestMappingHandlerMapping"/>
         <bean class="com.wen.AutoInjectResource">
@@ -17,11 +31,11 @@
         <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
             <property name="dataSource" ref="dataSource" />
         </bean>
-2. 需要自动保存到数据库的资源,在controller方法上加入
+3. 需要自动保存到数据库的资源,在controller方法上加入
 
         @InjectResource(name="resourceName", parentName="resourceParentName")
 
-3. 保存资源到数据库
+4. 保存资源到数据库
     
         // 注入
         @Inject
