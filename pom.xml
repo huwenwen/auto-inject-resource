@@ -6,11 +6,14 @@
 
     <groupId>com.wen</groupId>
     <artifactId>auto_inject_resource</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.0.1-spring</version>
 
     <properties>
         <springframework.version>4.1.7.RELEASE</springframework.version>
         <java.version>1.8</java.version>
+        <github.global.server>github</github.global.server>
+        <github.repository.name>mvn-repo</github.repository.name>
+        <github.branch.name>master</github.branch.name>
     </properties>
 
     <dependencies>
@@ -45,19 +48,54 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.1</version>
+                <configuration>
+                    <altDeploymentRepository>
+                        internal.repo::default::file://${project.build.directory}/mvn-repo
+                    </altDeploymentRepository>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.github</groupId>
+                <artifactId>site-maven-plugin</artifactId>
+                <version>0.11</version>
+                <configuration>
+                    <message>Maven artifacts for ${project.version}
+                    </message>  <!-- git commit message -->
+                    <noJekyll>true
+                    </noJekyll>                                  <!-- disable webpage processing -->
+                    <outputDirectory>${project.build.directory}/mvn-repo
+                    </outputDirectory> <!-- matches distribution management repository url above -->
+                    <branch>refs/heads/${github.branch.name}
+                    </branch>                       <!-- remote branch name -->
+                    <includes>
+                        <include>**/*</include>
+                    </includes>
+                    <repositoryName>${github.repository.name}
+                    </repositoryName>      <!-- github repo name -->
+                    <repositoryOwner>438926995</repositoryOwner>    <!-- github username  -->
+                </configuration>
+                <executions>
+                    <!-- run site-maven-plugin's 'site' target as part of the build's normal 'deploy' phase -->
+                    <execution>
+                        <goals>
+                            <goal>site</goal>
+                        </goals>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
     <distributionManagement>
         <repository>
-            <id>repo</id>
-            <name>public</name>
-            <url>http://localhost:8081/nexus/content/repositories/releases</url>
+            <id>internal.repo</id>
+            <name>Temporary Staging Repository</name>
+            <url>file://${project.build.directory}/mvn-repo</url>
         </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>Snapshots</name>
-            <url>http://localhost:8081/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
     </distributionManagement>
 </project>
