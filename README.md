@@ -1,5 +1,6 @@
 ##自动加载权限系统中的资源到数据库
 * 适用的javaWeb后台系统: 资源表的设计必须可以用资源名称来唯一区分
+* 如果你的系统使用springMvc, 你可以使用spring的版本。切换到[spring branch](https://github.com/huwenwen/auto_inject_resource/tree/spring)。
 
 ###Getting Start
 1. maven 配置
