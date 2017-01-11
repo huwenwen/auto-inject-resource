@@ -1,7 +1,5 @@
-##基于spring mvc 的自动加载权限系统中的资源到数据库
-* 和spring-mvc绑定，暂时只适用使用spring-mvc系统。数据库操作使用spring-jdbc,需要有spring-jdbc配置。
-* 借助于springmvc 中 RequestMappingHandlerMapping项目启动时扫描所有的方法, 自定义一个类继承它, 在扫描方法的同时去把自定义注解中的资源load到静态变量中。
-* 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称来唯一区分
+##自动加载权限系统中的资源到数据库
+* 适用的javaWeb后台系统: 资源表的设计必须可以用资源名称来唯一区分
 
 ###Getting Start
 1. maven 配置
@@ -16,24 +14,19 @@
         <dependency>
             <groupId>com.wen</groupId>
             <artifactId>auto_inject_resource</artifactId>
-            <version>0.0.1-spring</version>
+            <version>0.0.1</version>
         </dependency>
-2. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
+2. 加入配置
 
-        <bean id="customRequestMappingHandlerMapping" class="com.wen.CustomRequestMappingHandlerMapping"/>
         <bean class="com.wen.AutoInjectResource">
-            <property name="jdbcTemplate" ref="jdbcTemplate"/>
-            <property name="customRequestMappingHandlerMapping" ref="customRequestMappingHandlerMapping"/>
+            <!-- 数据源 -->
+            <property name="dataSource" ref="dataSource"/>
+            <!-- @InjectResource所在的package, 可以是多个(用逗号分隔), 一般为controller层 -->
+            <property name="controllerPackages" value="com.wen.controller"/>
         </bean>
-注意:
-    applicationContext.xml 需要有jdbcTemplate(spring-jdbc)注入,示例如下
-    
-        <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
-            <property name="dataSource" ref="dataSource" />
-        </bean>
-3. 需要自动保存到数据库的资源,在controller方法上加入
+3. 需要自动保存到数据库的资源,在方法上加
 
-        @InjectResource(name="resourceName", parentName="resourceParentName")
+        @InjectResource(name="resourceName", url="/test/123" parentName="resourceParentName")
 
 4. 保存资源到数据库
     
@@ -76,18 +69,8 @@
 2. 可以在@InjectResource customProps中 加入一些自定义的数据库字段和对应的值。
     customProps 为数组, 数组中的值的格式为key:value, key为资源表中的字段名,value为这个字段的值
     
-        @InjectResource(name = "resourceName", parentName = "resourceParentName", customProps = {"key1:value1", "key2:value2"})
-    
-### 默认值
-* 资源url的默认值是 @RequestMapping(value = "/xxx/test") 中的 value值,可以自定义url="abc/test"。
+        @InjectResource(name = "resourceName", url="abc/123", parentName = "resourceParentName", customProps = {"key1:value1", "key2:value2"})
 
->当url为默认值时，可以选择是否去掉第一个位置出现的 '/'（默认不去掉）;
-配置CustomRequestMappingHandlerMapping注入 filterUrlStartSlash = true;
-效果为 @RequestMapping(value = "/xxx/test") 得到的url为 xxx/test.
-
-* 资源power排序默认是99, 可自定义
-* 资源grade级别默认为1, 可自定义
-    
 ### 缺陷
 * 设计的资源表必须是要以资源名称来唯一区别的
 * 资源名称如果修改，下次这个资源还会再次保存在数据库
@@ -135,8 +118,13 @@
          public ModelAndView listDetail() {
             // dosomthing
          }
+         
+  向数据库插入以上资源:
+    
+        List<Resource> successInsertResourceList = autoInjectResource.saveResource();
+  
      
-
+  返回的list为成功向数据库插入的数据
   
 
 

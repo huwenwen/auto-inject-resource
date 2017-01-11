@@ -1,25 +1,20 @@
 package com.wen;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-
+import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author huwenwen
  * @since 17/1/10
  */
-public class AutoInjectResource {
-
-  private static final Logger logger = LoggerFactory.getLogger(AutoInjectResource.class);
-
-  private CustomRequestMappingHandlerMapping customRequestMappingHandlerMapping;
-  private JdbcTemplate jdbcTemplate;
+public class AutoInjectResource extends InjectResourceAnnotationsHandler {
+  private String[] controllerPackages;
   private String tableName = "m_resource";
   private String columnUrl = "url";
   private String columnName = "name";
@@ -33,7 +28,7 @@ public class AutoInjectResource {
    *
    * @throws InjectResourceException
    */
-  public void saveResource() throws InjectResourceException {
+  public List<Resource> saveResource() throws InjectResourceException{
     try {
       String temp;
       if ((temp = ReadConfigUtils.getProperty("resource.table.name")) != null) {
@@ -60,10 +55,18 @@ public class AutoInjectResource {
     } catch (Exception e) {
       logger.warn("you don't hava auto_inject_resource.properties file");
     }
-    List<Resource> newResourceList = getNewResource();
-    List<Resource> nextList = insertResource(newResourceList, 1);
-    if (!nextList.isEmpty()) {
-      insertResource(newResourceList, 2);
+    try {
+      List<Resource> newResourceList = getNewResource();
+      if(newResourceList.isEmpty()){
+        return newResourceList;
+      }
+      List<Resource> nextList = insertResource(newResourceList, 1);
+      if (!nextList.isEmpty()) {
+        insertResource(newResourceList, 2);
+      }
+      return newResourceList;
+    } catch (Exception e) {
+      throw new InjectResourceException("oh my god!!! some exception had appear", e);
     }
   }
 
@@ -72,8 +75,9 @@ public class AutoInjectResource {
    *
    * @return
    */
-  public List<Resource> getNewResource() {
-    List<Resource> resourceList = customRequestMappingHandlerMapping.getResourceList();
+  public List<Resource> getNewResource()
+      throws InjectResourceException, ClassNotFoundException, SQLException {
+    List<Resource> resourceList = getAllInjectResource();
     List<Resource> newResourceList = new ArrayList<>();
     // 查询数据库所有资源
     StringBuilder sql = new StringBuilder();
@@ -81,13 +85,57 @@ public class AutoInjectResource {
     sql.append(columnName);
     sql.append(" from ");
     sql.append(tableName);
-    List<String> originNameList = jdbcTemplate.queryForList(sql.toString(), String.class);
+    List<String> originNameList = getList(sql.toString());
     resourceList.stream().forEach(a -> {
       if (!originNameList.contains(a.getName())) {
         newResourceList.add(a);
       }
     });
     return newResourceList;
+  }
+
+  /**
+   * 获得所有注解的值
+   *
+   * @return
+   * @throws InjectResourceException
+   * @throws ClassNotFoundException
+   */
+  public List<Resource> getAllInjectResource()
+      throws InjectResourceException, ClassNotFoundException {
+    List<Resource> resourceList = new ArrayList<>();
+    for (String location : controllerPackages) {
+      Set<Class<?>> classes = super.getClasses(location);
+      for (Class<?> clazz : classes) {
+        for (Method method : clazz.getMethods()) {
+          InjectResource annotation = method.getAnnotation(InjectResource.class);
+          if(annotation != null){
+            Resource r = new Resource();
+            r.setName(annotation.name());
+            r.setUrl(annotation.url());
+            r.setParentName(annotation.parentName());
+            r.setPower(annotation.power());
+            r.setGrade(annotation.grade());
+            // 自定义属性
+            String[] props = annotation.customProps();
+            if (props.length > 0) {
+              Map<String, String> map = new HashMap<>();
+              for (String prop : props) {
+                String[] split = prop.split(":");
+                if (split.length == 2) {
+                  String key = split[0].trim();
+                  String value = split[1].trim();
+                  map.put(key, value);
+                }
+              }
+              r.setCustomProps(map);
+            }
+            resourceList.add(r);
+          }
+        }
+      }
+    }
+    return resourceList;
   }
 
   /**
@@ -99,7 +147,7 @@ public class AutoInjectResource {
    * @throws InjectResourceException
    */
   private List<Resource> insertResource(List<Resource> list, int time)
-      throws InjectResourceException {
+      throws InjectResourceException, SQLException {
     List<Resource> nextInsertList = new ArrayList<>();
     for (Resource resource : list) {
       //  查询父节点信息
@@ -117,8 +165,7 @@ public class AutoInjectResource {
         parentId = "0";
       } else {
         try {
-          parentId =
-              jdbcTemplate.queryForObject(sb.toString(), String.class, resource.getParentName());
+          parentId = getString(sb.toString(), resource.getParentName());
           if (parentId == null) {
             if (time > 1) {
               // second time throw exception
@@ -130,8 +177,8 @@ public class AutoInjectResource {
             nextInsertList.add(resource);
             continue;
           }
-        } catch (IncorrectResultSizeDataAccessException e) {
-          logger.error("Column [{}] in the table [{}] must be unique", columnName, tableName, e);
+        } catch (InjectResourceException e) {
+          logger.error("Column [" + columnName + "] in the table [" + tableName + "] must be unique", e);
           throw new InjectResourceException(
               "Column [" + columnName + "] in the table [" + tableName + "] must be unique", e);
         }
@@ -170,23 +217,13 @@ public class AutoInjectResource {
       params.add(resource.getGrade());
       params.add(parentId);
       try {
-        jdbcTemplate.update(sql.toString(), params.toArray());
+        update(sql.toString(), params.toArray());
       } catch (Exception e) {
-        logger.error("execute sql [{}] ;An error occurred", sql.toString(), e);
-        throw new InjectResourceException("execute sql [" + sql.toString() + "] ;An error occurred",
-            e);
+        logger.error("execute sql [" + sql.toString() + "] ;An error occurred", e);
+        throw new InjectResourceException("execute sql [" + sql.toString() + "] ;An error occurred", e);
       }
     }
     return nextInsertList;
-  }
-
-  public void setCustomRequestMappingHandlerMapping(
-      CustomRequestMappingHandlerMapping customRequestMappingHandlerMapping) {
-    this.customRequestMappingHandlerMapping = customRequestMappingHandlerMapping;
-  }
-
-  public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
   }
 
   public void setTableName(String tableName) {
@@ -211,6 +248,10 @@ public class AutoInjectResource {
 
   public void setColumnParentSource(String columnParentSource) {
     this.columnParentSource = columnParentSource;
+  }
+
+  public void setControllerPackages(String[] controllerPackages) {
+    this.controllerPackages = controllerPackages;
   }
 
   public void setColumnParent(String columnParent) {

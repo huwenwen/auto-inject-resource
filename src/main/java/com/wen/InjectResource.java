@@ -27,7 +27,7 @@ public @interface InjectResource {
    *
    * @return
    */
-  String url() default "";
+  String url();
 
   /**
    * 资源排序

@@ -1,7 +1,7 @@
 package com.wen;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +13,7 @@ import java.util.Properties;
  */
 public class ReadConfigUtils {
 
-  private static Logger logger = LoggerFactory.getLogger(ReadConfigUtils.class);
+  private static Log logger = LogFactory.getLog(ReadConfigUtils.class);
 
   private static Properties p = new Properties();
 
