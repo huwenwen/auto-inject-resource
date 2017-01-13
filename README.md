@@ -14,7 +14,7 @@
         
         <dependency>
             <groupId>com.wen</groupId>
-            <artifactId>auto_inject_resource</artifactId>
+            <artifactId>auto-inject-resource</artifactId>
             <version>0.0.2</version>
         </dependency>
 2. 加入配置
