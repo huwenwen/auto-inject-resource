@@ -1,8 +1,8 @@
-##自动加载权限系统中的资源到数据库
+#自动加载权限系统中的资源到数据库
 * 适用的javaWeb后台系统: 资源表的设计必须可以用 资源名称 + 你定义的字段 来唯一区分
 * 如果你的系统使用springMvc, 你可以使用[spring版本](https://github.com/huwenwen/auto_inject_resource/tree/spring)
 
-###Getting Start
+##Getting Start
 1. maven 配置
         
         <repositories>
@@ -38,7 +38,7 @@
         // 调用方法
         autoInjectResource.saveResource();
     
-### 使用文档
+## 使用文档
 1. 配置自己数据库的资源表的表名称以及字段名称
 >第一种方式:在classpath路径下加入 auto_inject_resource.properties 文件。如下该文件示例
     
@@ -86,10 +86,10 @@
      
      如上注入则 @InjectResource中必须包含 parentOtherProps={"column1:value1, column2:value2"}。
      
-### 缺陷
+## 缺陷
 * 通过注入的资源, 资源名称不能修改。资源名称如果修改，下次这个资源还会再次保存在数据库。
 
-### DEMO
+## DEMO
    我的数据库资源表结构如下
    
         CREATE TABLE `M_RESOURCE` (
