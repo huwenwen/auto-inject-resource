@@ -1,5 +1,7 @@
 package com.wen;
 
+import com.wen.exception.InjectResourceException;
+
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,7 +29,7 @@ public class SimpleJdbcTemplate {
    * @return
    * @throws SQLException
    */
-  public List<String> getList(String sql, Object... arguments) throws SQLException {
+  public List<String> getList(String sql, int columnNum, Object... arguments) throws SQLException {
     List<String> resultList = new ArrayList<>();
     Connection conn = null;
     PreparedStatement ps = null;
@@ -42,7 +44,11 @@ public class SimpleJdbcTemplate {
       }
       resultSet = ps.executeQuery();
       while (resultSet.next()){
-        resultList.add(resultSet.getString(1));
+        StringBuilder temp = new StringBuilder();
+        for (int i = 0; i < columnNum; i++) {
+          temp.append(resultSet.getString(i + 1));
+        }
+        resultList.add(temp.toString());
       }
     } finally {
       if(resultSet != null){

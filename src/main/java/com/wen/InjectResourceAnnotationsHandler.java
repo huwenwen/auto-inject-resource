@@ -1,5 +1,6 @@
 package com.wen;
 
+import com.wen.exception.InjectResourceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

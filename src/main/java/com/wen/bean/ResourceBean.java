@@ -1,4 +1,4 @@
-package com.wen;
+package com.wen.bean;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,14 +7,23 @@ import java.util.Map;
  * @author huwenwen
  * @since 17/1/9
  */
-public class Resource {
+public class ResourceBean {
 
   private String name;
   private String url;
   private int grade;
   private int power;
   private String parentName;
+  private Map<String, String> parentOtherProps = new HashMap<>();
   private Map<String, String> customProps = new HashMap<>();
+
+  public Map<String, String> getParentOtherProps() {
+    return parentOtherProps;
+  }
+
+  public void setParentOtherProps(Map<String, String> parentOtherProps) {
+    this.parentOtherProps = parentOtherProps;
+  }
 
   public Map<String, String> getCustomProps() {
     return customProps;

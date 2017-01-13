@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.wen</groupId>
-    <artifactId>auto_inject_resource</artifactId>
-    <version>0.0.1</version>
+    <artifactId>auto-inject-resource</artifactId>
+    <version>0.0.2</version>
 
     <properties>
         <java.version>1.8</java.version>

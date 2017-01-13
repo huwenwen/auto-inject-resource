@@ -1,9 +1,14 @@
 package com.wen;
 
+import com.wen.annontation.InjectResource;
+import com.wen.bean.ResourceBean;
+import com.wen.exception.InjectResourceException;
+import com.wen.util.CommonUtils;
+import com.wen.util.ReadConfigUtils;
+
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +27,15 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
   private String columnGrade = "grade";
   private String columnParentSource = "id";
   private String columnParent = "parent_id";
+  // 确定父节点的字段, 默认加上资源名称字段
+  private String[] confirmParentColumns = {};
 
   /**
    * 自动扫描注入resource
    *
    * @throws InjectResourceException
    */
-  public List<Resource> saveResource() throws InjectResourceException{
+  public List<ResourceBean> saveResource() throws InjectResourceException{
     try {
       String temp;
       if ((temp = ReadConfigUtils.getProperty("resource.table.name")) != null) {
@@ -56,15 +63,15 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
       logger.warn("you don't hava auto_inject_resource.properties file");
     }
     try {
-      List<Resource> newResourceList = getNewResource();
-      if(newResourceList.isEmpty()){
-        return newResourceList;
+      List<ResourceBean> newResourceBeanList = getNewResource();
+      if(newResourceBeanList.isEmpty()){
+        return newResourceBeanList;
       }
-      List<Resource> nextList = insertResource(newResourceList, 1);
+      List<ResourceBean> nextList = insertResource(newResourceBeanList, 1);
       if (!nextList.isEmpty()) {
-        insertResource(newResourceList, 2);
+        insertResource(nextList, 2);
       }
-      return newResourceList;
+      return newResourceBeanList;
     } catch (Exception e) {
       throw new InjectResourceException("oh my god!!! some exception had appear", e);
     }
@@ -75,23 +82,36 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
    *
    * @return
    */
-  public List<Resource> getNewResource()
+  public List<ResourceBean> getNewResource()
       throws InjectResourceException, ClassNotFoundException, SQLException {
-    List<Resource> resourceList = getAllInjectResource();
-    List<Resource> newResourceList = new ArrayList<>();
+    List<ResourceBean> resourceBeanList = getAllInjectResource();
+    List<ResourceBean> newResourceBeanList = new ArrayList<>();
     // 查询数据库所有资源
     StringBuilder sql = new StringBuilder();
     sql.append("select ");
     sql.append(columnName);
+    for (String confirmParentColumn : confirmParentColumns) {
+      sql.append(",");
+      sql.append(confirmParentColumn);
+    }
     sql.append(" from ");
     sql.append(tableName);
-    List<String> originNameList = getList(sql.toString());
-    resourceList.stream().forEach(a -> {
-      if (!originNameList.contains(a.getName())) {
-        newResourceList.add(a);
+    List<String> originNameList = getList(sql.toString(), 1 + confirmParentColumns.length);
+    for (ResourceBean a : resourceBeanList) {
+      Map<String, String> parentOtherProps = a.getParentOtherProps();
+      StringBuilder temp = new StringBuilder(a.getName());
+      for (String confirmParentColumn : confirmParentColumns) {
+        String s = parentOtherProps.get(confirmParentColumn);
+        if(s == null){
+          throw new InjectResourceException("you defined confirmParentColumns [" + confirmParentColumn + "], but not found in annotation [@AutoInjectResource] property [parentOtherProps]");
+        }
+        temp.append(parentOtherProps.get(confirmParentColumn));
       }
-    });
-    return newResourceList;
+      if (!originNameList.contains(temp.toString())) {
+        newResourceBeanList.add(a);
+      }
+    }
+    return newResourceBeanList;
   }
 
   /**
@@ -101,41 +121,33 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
    * @throws InjectResourceException
    * @throws ClassNotFoundException
    */
-  public List<Resource> getAllInjectResource()
+  public List<ResourceBean> getAllInjectResource()
       throws InjectResourceException, ClassNotFoundException {
-    List<Resource> resourceList = new ArrayList<>();
+    if(controllerPackages == null){
+      throw new InjectResourceException("you must setter [controllerPackages] property");
+    }
+    List<ResourceBean> resourceBeanList = new ArrayList<>();
     for (String location : controllerPackages) {
       Set<Class<?>> classes = super.getClasses(location);
       for (Class<?> clazz : classes) {
         for (Method method : clazz.getMethods()) {
           InjectResource annotation = method.getAnnotation(InjectResource.class);
           if(annotation != null){
-            Resource r = new Resource();
+            ResourceBean r = new ResourceBean();
             r.setName(annotation.name());
             r.setUrl(annotation.url());
             r.setParentName(annotation.parentName());
             r.setPower(annotation.power());
             r.setGrade(annotation.grade());
             // 自定义属性
-            String[] props = annotation.customProps();
-            if (props.length > 0) {
-              Map<String, String> map = new HashMap<>();
-              for (String prop : props) {
-                String[] split = prop.split(":");
-                if (split.length == 2) {
-                  String key = split[0].trim();
-                  String value = split[1].trim();
-                  map.put(key, value);
-                }
-              }
-              r.setCustomProps(map);
-            }
-            resourceList.add(r);
+            r.setCustomProps(CommonUtils.arrayConvertToMap(annotation.customProps()));
+            r.setParentOtherProps(CommonUtils.arrayConvertToMap(annotation.parentOtherProps()));
+            resourceBeanList.add(r);
           }
         }
       }
     }
-    return resourceList;
+    return resourceBeanList;
   }
 
   /**
@@ -146,12 +158,13 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
    * @return
    * @throws InjectResourceException
    */
-  private List<Resource> insertResource(List<Resource> list, int time)
+  private List<ResourceBean> insertResource(List<ResourceBean> list, int time)
       throws InjectResourceException, SQLException {
-    List<Resource> nextInsertList = new ArrayList<>();
-    for (Resource resource : list) {
+    List<ResourceBean> nextInsertList = new ArrayList<>();
+    for (ResourceBean resourceBean : list) {
       //  查询父节点信息
       StringBuilder sb = new StringBuilder();
+      List<Object> ps = new ArrayList<>();
       sb.append("select ");
       sb.append(columnParentSource);
       sb.append(" from ");
@@ -159,32 +172,36 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
       sb.append(" where ");
       sb.append(columnName);
       sb.append(" = ?");
+      ps.add(resourceBean.getParentName());
+      Map<String, String> parentOtherProps = resourceBean.getParentOtherProps();
+      for (String confirmParentColumn : confirmParentColumns) {
+        sb.append(" and " + confirmParentColumn + " = ?");
+        ps.add(parentOtherProps.get(confirmParentColumn));
+      }
+
       String parentId;
       // 没有父节点
-      if ("".equals(resource.getParentName())) {
+      if ("".equals(resourceBean.getParentName())) {
         parentId = "0";
       } else {
         try {
-          parentId = getString(sb.toString(), resource.getParentName());
+          parentId = getString(sb.toString(), ps.toArray());
           if (parentId == null) {
             if (time > 1) {
               // second time throw exception
-              throw new InjectResourceException(
-                  "not found parentId with sql [" + sb.toString() + "] , params is [" + resource
-                      .getParentName() + "]");
+              throw new InjectResourceException("not found parentId with sql [" + sb.toString() + "] , params is [" + resourceBean.getParentName() + "]");
             }
             // save next to insert
-            nextInsertList.add(resource);
+            nextInsertList.add(resourceBean);
             continue;
           }
         } catch (InjectResourceException e) {
           logger.error("Column [" + columnName + "] in the table [" + tableName + "] must be unique", e);
-          throw new InjectResourceException(
-              "Column [" + columnName + "] in the table [" + tableName + "] must be unique", e);
+          throw new InjectResourceException("Column [" + columnName + "] in the table [" + tableName + "] must be unique", e);
         }
       }
       StringBuilder sql = new StringBuilder();
-      Map<String, String> customPropMap = resource.getCustomProps();
+      Map<String, String> customPropMap = resourceBean.getCustomProps();
       sql.append("insert into ");
       sql.append(tableName);
       sql.append(" (");
@@ -211,10 +228,10 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
         sql.append("?,");
       }
       sql.append("?,?,?,?,?)");
-      params.add(resource.getUrl());
-      params.add(resource.getName());
-      params.add(resource.getPower());
-      params.add(resource.getGrade());
+      params.add(resourceBean.getUrl());
+      params.add(resourceBean.getName());
+      params.add(resourceBean.getPower());
+      params.add(resourceBean.getGrade());
       params.add(parentId);
       try {
         update(sql.toString(), params.toArray());
@@ -256,5 +273,9 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
 
   public void setColumnParent(String columnParent) {
     this.columnParent = columnParent;
+  }
+
+  public void setConfirmParentColumns(String[] confirmParentColumns) {
+    this.confirmParentColumns = confirmParentColumns;
   }
 }

@@ -1,5 +1,5 @@
 ##自动加载权限系统中的资源到数据库
-* 适用的javaWeb后台系统: 资源表的设计必须可以用资源名称来唯一区分
+* 适用的javaWeb后台系统: 资源表的设计必须可以用 资源名称 + 你定义的字段 来唯一区分
 * 如果你的系统使用springMvc, 你可以使用[spring版本](https://github.com/huwenwen/auto_inject_resource/tree/spring)
 
 ###Getting Start
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>com.wen</groupId>
             <artifactId>auto_inject_resource</artifactId>
-            <version>0.0.1</version>
+            <version>0.0.2</version>
         </dependency>
 2. 加入配置
 
@@ -43,7 +43,7 @@
 >第一种方式:在classpath路径下加入 auto_inject_resource.properties 文件。如下该文件示例
     
         # 资源表名
-        resource.table.name=m_resource
+        resourceBean.table.name=m_resource
         # 资源表对应url的列名
         table.column.url=RESOURCE_STRING
         # 资源表对应名称的列名
@@ -72,9 +72,22 @@
     
         @InjectResource(name = "resourceName", url="abc/123", parentName = "resourceParentName", customProps = {"key1:value1", "key2:value2"})
 
+3. 资源名称 + 自定义的可以唯一区别的字段使用
+
+        <bean class="com.wen.AutoInjectResource">
+            <property name="confirmParentColumns" value="column1,column2"/>
+        </bean>
+        
+     自定义确认父节点的字段（默认加上资源名称）。如上则是用 (资源名称 + column1 + column2) 来唯一确认父节点。
+     
+     可以是一个或者多个。也可以不注入,不注入则默认用[资源名称]来唯一区分并确认父节点。
+     
+     一旦注入 confirmParentColumns 字段, 你的@InjectResource 中的 parentOtherProps 属性必须也要有这些字段。
+     
+     如上注入则 @InjectResource中必须包含 parentOtherProps={"column1:value1, column2:value2"}。
+     
 ### 缺陷
-* 设计的资源表必须是要以资源名称来唯一区别的
-* 资源名称如果修改，下次这个资源还会再次保存在数据库
+* 通过注入的资源, 资源名称不能修改。资源名称如果修改，下次这个资源还会再次保存在数据库。
 
 ### DEMO
    我的数据库资源表结构如下

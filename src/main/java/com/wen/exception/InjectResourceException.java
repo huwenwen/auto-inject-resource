@@ -1,4 +1,4 @@
-package com.wen;
+package com.wen.exception;
 
 import java.io.Serializable;
 

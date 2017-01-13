@@ -1,4 +1,4 @@
-package com.wen;
+package com.wen.annontation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -20,14 +20,14 @@ public @interface InjectResource {
    *
    * @return
    */
-  String name();
+  String name() default "";
 
   /**
    * 资源url
    *
    * @return
    */
-  String url();
+  String url() default "";
 
   /**
    * 资源排序
@@ -48,6 +48,13 @@ public @interface InjectResource {
    * @return
    */
   String parentName() default "";
+
+  /**
+   * 其他父节点字段和值
+   *
+   * @return
+   */
+  String[] parentOtherProps() default {};
 
   String[] customProps() default {};
 }
