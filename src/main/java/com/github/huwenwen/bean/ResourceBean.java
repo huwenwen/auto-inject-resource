@@ -14,6 +14,7 @@ public class ResourceBean {
   private int grade;
   private int power;
   private String parentName;
+  private boolean isNoParent;
   private Map<String, String> parentOtherProps = new HashMap<>();
   private Map<String, String> customProps = new HashMap<>();
 
@@ -71,5 +72,13 @@ public class ResourceBean {
 
   public void setParentName(String parentName) {
     this.parentName = parentName;
+  }
+
+  public boolean isNoParent() {
+    return isNoParent;
+  }
+
+  public void setNoParent(boolean noParent) {
+    isNoParent = noParent;
   }
 }

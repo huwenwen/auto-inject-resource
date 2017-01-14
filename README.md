@@ -1,5 +1,6 @@
 #自动加载权限系统中的资源到数据库
 * 适用的javaWeb后台系统: 资源表的设计必须可以用 资源名称 + 你定义的字段 来唯一区分
+* 用唯一区别的字段来寻找父节点
 * 如果你的系统使用springMvc, 你可以使用[spring版本](https://github.com/huwenwen/auto_inject_resource/tree/spring)
 
 ##Getting Start
@@ -15,15 +16,15 @@
         <dependency>
             <groupId>com.github.huwenwen</groupId>
             <artifactId>auto-inject-resource</artifactId>
-            <version>0.0.2</version>
+            <version>0.0.3</version>
         </dependency>
 2. 加入配置
 
-        <bean class="AutoInjectResource">
+        <bean class="com.github.huwenwen.AutoInjectResource">
             <!-- 数据源 -->
             <property name="dataSource" ref="dataSource"/>
             <!-- @InjectResource所在的package, 可以是多个(用逗号分隔), 一般为controller层 -->
-            <property name="controllerPackages" value="com.wen.controller"/>
+            <property name="basePackages" value="com.wen.controller"/>
         </bean>
 3. 需要自动保存到数据库的资源,在方法上加
 
@@ -58,7 +59,7 @@
         table.column.parent.source=RESOURCE_ID
 >第二种方式:spring属性注入
     
-        <bean class="AutoInjectResource">
+        <bean class="com.github.huwenwen.AutoInjectResource">
             <property name="tableName" value="m_resource"/>
             <property name="columnUrl" value="RESOURCE_STRING"/>
             <property name="columnName" value="RESOURCE_NAME"/>
@@ -74,17 +75,36 @@
 
 3. 资源名称 + 自定义的可以唯一区别的字段使用
 
-        <bean class="AutoInjectResource">
-            <property name="confirmParentColumns" value="column1,column2"/>
+        <bean class="com.github.huwenwen.AutoInjectResource">
+            <property name="otherConfirmUniqueColumns" value="column1,column2"/>
         </bean>
         
-     自定义确认父节点的字段（默认加上资源名称）。如上则是用 (资源名称 + column1 + column2) 来唯一确认父节点。
+     自定义确认父节点的字段（默认加上资源名称）。如上则是用 (资源名称 + column1 + column2) 来唯一确认父节点 和 唯一确定这条资源。
      
-     可以是一个或者多个。也可以不注入,不注入则默认用[资源名称]来唯一区分并确认父节点。
+     可以是一个或者多个。也可以不注入,不注入则默认用[资源名称]来唯一区分并确认父节点 和 这条资源。
      
-     一旦注入 confirmParentColumns 字段, 你的@InjectResource 中的 parentOtherProps 属性必须也要有这些字段。
+     一旦注入 otherConfirmUniqueColumns 字段, 你的@InjectResource 中的 parentOtherProps(没有父节点可以不要) 和 customProps 属性必须也要有这些字段。
      
-     如上注入则 @InjectResource中必须包含 parentOtherProps={"column1:value1, column2:value2"}。
+     如上注入则 @InjectResource中必须包含 parentOtherProps={"column1:value1, column2:value2"} (没有父节点可以不要) customProps={"column1:value1, column2:value2"}。
+
+4. customProps和parentOtherProps默认值 注入(key:资源表字段, value:该字段值)
+
+        <bean class="com.github.huwenwen.AutoInjectResource">
+            <property name="defaultCustomProps">
+                <map>
+                    <entry key="column1" value="value1"/>
+                    <entry key="column2" value="value2"/>
+                </map>
+            </property>
+            <property name="defaultParentOtherProps">
+                <map>
+                    <entry key="column1" value="value1"/>
+                    <entry key="column2" value="value2"/>
+                </map>
+            </property>
+        </bean>
+   
+   如上注入全局生效。如果你想某个注入的资源不生效, 你可以这么使用@InjectResource(enableDefaultCustomProps = false, enableDefaultParentOtherProps = false)
      
 ## 缺陷
 * 通过注入的资源, 资源名称不能修改。资源名称如果修改，下次这个资源还会再次保存在数据库。

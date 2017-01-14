@@ -6,7 +6,7 @@
 
     <groupId>com.github.huwenwen</groupId>
     <artifactId>auto-inject-resource</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -42,4 +42,17 @@
             <url>https://api.bintray.com/maven/wenwen/mvn-repo/auto-inject-resource/;publish=1</url>
         </repository>
     </distributionManagement>
+
+    <!--<distributionManagement>-->
+        <!--<repository>-->
+            <!--<id>repo</id>-->
+            <!--<name>public</name>-->
+            <!--<url>http://localhost:8081/nexus/content/repositories/releases</url>-->
+        <!--</repository>-->
+        <!--<snapshotRepository>-->
+            <!--<id>snapshots</id>-->
+            <!--<name>snapshots</name>-->
+            <!--<url>http://localhost:8081/nexus/content/repositories/snapshots</url>-->
+        <!--</snapshotRepository>-->
+    <!--</distributionManagement>-->
 </project>

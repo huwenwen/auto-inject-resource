@@ -20,7 +20,8 @@ import java.util.Set;
  * @since 17/1/10
  */
 public class AutoInjectResource extends InjectResourceAnnotationsHandler {
-  private String[] controllerPackages;
+  // 自动扫描注解的包
+  private String[] basePackages;
   private String tableName = "m_resource";
   private String columnUrl = "url";
   private String columnName = "name";
@@ -29,7 +30,11 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
   private String columnParentSource = "id";
   private String columnParent = "parent_id";
   // 确定父节点的字段, 默认加上资源名称字段
-  private String[] confirmParentColumns = {};
+  private String[] otherConfirmUniqueColumns = {};
+  private Map<String, String> defaultCustomProps;
+  private Map<String, String> defaultParentOtherProps;
+  // 没有父节点的级别, 默认为 1
+  private int noParentGrade = 1;
 
   /**
    * 自动扫描注入resource
@@ -93,17 +98,17 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
     StringBuilder sql = new StringBuilder();
     sql.append("select ");
     sql.append(columnName);
-    for (String confirmParentColumn : confirmParentColumns) {
+    for (String confirmParentColumn : otherConfirmUniqueColumns) {
       sql.append(",");
       sql.append(confirmParentColumn);
     }
     sql.append(" from ");
     sql.append(tableName);
-    List<String> originNameList = getList(sql.toString(), 1 + confirmParentColumns.length);
+    List<String> originNameList = getList(sql.toString(), 1 + otherConfirmUniqueColumns.length);
     for (ResourceBean a : resourceBeanList) {
       Map<String, String> parentOtherProps = a.getParentOtherProps();
       StringBuilder temp = new StringBuilder(a.getName());
-      for (String confirmParentColumn : confirmParentColumns) {
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
         temp.append(parentOtherProps.get(confirmParentColumn));
       }
       if (!originNameList.contains(temp.toString())) {
@@ -116,6 +121,7 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
 
   /**
    * 校验注入的资源是否唯一 & 校验自定义确认父节点的字段在注解属性中出现
+   *
    * @param list
    * @throws InjectResourceException
    */
@@ -124,19 +130,27 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
     for (ResourceBean r : list) {
       StringBuilder key = new StringBuilder(r.getName());
       Map<String, String> parentOtherProps = r.getParentOtherProps();
-      for (String confirmParentColumn : confirmParentColumns) {
+      Map<String, String> customProps = r.getCustomProps();
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
         String s = parentOtherProps.get(confirmParentColumn);
-        if(s == null){
-          throw new InjectResourceException("you defined confirmParentColumns [" + confirmParentColumn + "], but not found in annotation [@InjectResource] property [parentOtherProps]");
+        // 对应没有父节点的不校验这点
+        if(r.isNoParent()){
+          s = "";
         }
-        key.append(s);
+        String custom = customProps.get(confirmParentColumn);
+        if(s == null){
+          throw new InjectResourceException("you defined otherConfirmUniqueColumns [" + confirmParentColumn + "], but not found in annotation [@InjectResource] property [parentOtherProps]");
+        }
+        if(custom == null){
+          throw new InjectResourceException("you defined otherConfirmUniqueColumns [" + confirmParentColumn + "], but not found in annotation [@InjectResource] property [customProps]");
+        }
+        key.append(custom);
       }
       if(map.containsKey(key.toString())){
         throw new InjectResourceException("@InjectResource inject resource not unique, the same name is " + r.getName() + ", please check and modify it");
       }
       map.put(key.toString(), "");
     }
-
   }
 
   /**
@@ -148,11 +162,11 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
    */
   public List<ResourceBean> getAllInjectResource()
       throws InjectResourceException, ClassNotFoundException {
-    if(controllerPackages == null){
-      throw new InjectResourceException("you must setter [controllerPackages] property");
+    if(basePackages == null){
+      throw new InjectResourceException("you must setter [basePackages] property");
     }
     List<ResourceBean> resourceBeanList = new ArrayList<>();
-    for (String location : controllerPackages) {
+    for (String location : basePackages) {
       Set<Class<?>> classes = super.getClasses(location);
       for (Class<?> clazz : classes) {
         for (Method method : clazz.getMethods()) {
@@ -164,9 +178,24 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
             r.setParentName(annotation.parentName());
             r.setPower(annotation.power());
             r.setGrade(annotation.grade());
+            // 是否没有父节点
+            if(annotation.grade() == noParentGrade){
+              r.setNoParent(true);
+            }
             // 自定义属性
-            r.setCustomProps(CommonUtils.arrayConvertToMap(annotation.customProps()));
-            r.setParentOtherProps(CommonUtils.arrayConvertToMap(annotation.parentOtherProps()));
+            Map<String, String> customMap =
+                CommonUtils.arrayConvertToMap(annotation.customProps());
+            Map<String, String> parentMap =
+                CommonUtils.arrayConvertToMap(annotation.parentOtherProps());
+            // 默认值
+            if(annotation.enableDefaultCustomProps() && defaultCustomProps != null){
+              customMap.putAll(defaultCustomProps);
+            }
+            if(annotation.enableDefaultParentOtherProps() && defaultParentOtherProps != null){
+              parentMap.putAll(defaultParentOtherProps);
+            }
+            r.setCustomProps(customMap);
+            r.setParentOtherProps(parentMap);
             resourceBeanList.add(r);
           }
         }
@@ -199,7 +228,7 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
       sb.append(" = ?");
       ps.add(resourceBean.getParentName());
       Map<String, String> parentOtherProps = resourceBean.getParentOtherProps();
-      for (String confirmParentColumn : confirmParentColumns) {
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
         sb.append(" and " + confirmParentColumn + " = ?");
         ps.add(parentOtherProps.get(confirmParentColumn));
       }
@@ -292,15 +321,27 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
     this.columnParentSource = columnParentSource;
   }
 
-  public void setControllerPackages(String[] controllerPackages) {
-    this.controllerPackages = controllerPackages;
+  public void setBasePackages(String[] basePackages) {
+    this.basePackages = basePackages;
   }
 
   public void setColumnParent(String columnParent) {
     this.columnParent = columnParent;
   }
 
-  public void setConfirmParentColumns(String[] confirmParentColumns) {
-    this.confirmParentColumns = confirmParentColumns;
+  public void setOtherConfirmUniqueColumns(String[] otherConfirmUniqueColumns) {
+    this.otherConfirmUniqueColumns = otherConfirmUniqueColumns;
+  }
+
+  public void setDefaultCustomProps(Map<String, String> defaultCustomProps) {
+    this.defaultCustomProps = defaultCustomProps;
+  }
+
+  public void setDefaultParentOtherProps(Map<String, String> defaultParentOtherProps) {
+    this.defaultParentOtherProps = defaultParentOtherProps;
+  }
+
+  public void setNoParentGrade(int noParentGrade) {
+    this.noParentGrade = noParentGrade;
   }
 }
