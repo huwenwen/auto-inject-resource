@@ -1,4 +1,4 @@
-package com.wen.exception;
+package com.github.huwenwen.exception;
 
 import java.io.Serializable;
 

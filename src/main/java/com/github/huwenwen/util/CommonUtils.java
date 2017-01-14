@@ -1,4 +1,4 @@
-package com.wen.util;
+package com.github.huwenwen.util;
 
 import java.util.HashMap;
 import java.util.Map;

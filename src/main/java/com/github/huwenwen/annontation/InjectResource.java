@@ -1,4 +1,4 @@
-package com.wen.annontation;
+package com.github.huwenwen.annontation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

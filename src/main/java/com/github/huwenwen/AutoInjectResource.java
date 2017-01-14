@@ -1,10 +1,10 @@
-package com.wen;
+package com.github.huwenwen;
 
-import com.wen.annontation.InjectResource;
-import com.wen.bean.ResourceBean;
-import com.wen.exception.InjectResourceException;
-import com.wen.util.CommonUtils;
-import com.wen.util.ReadConfigUtils;
+import com.github.huwenwen.annontation.InjectResource;
+import com.github.huwenwen.bean.ResourceBean;
+import com.github.huwenwen.exception.InjectResourceException;
+import com.github.huwenwen.util.CommonUtils;
+import com.github.huwenwen.util.ReadConfigUtils;
 
 import java.lang.reflect.Method;
 import java.sql.SQLException;

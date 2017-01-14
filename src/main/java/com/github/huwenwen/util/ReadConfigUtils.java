@@ -1,4 +1,4 @@
-package com.wen.util;
+package com.github.huwenwen.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

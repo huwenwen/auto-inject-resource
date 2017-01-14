@@ -13,13 +13,13 @@
         </repositories>
         
         <dependency>
-            <groupId>com.wen</groupId>
+            <groupId>com.github.huwenwen</groupId>
             <artifactId>auto-inject-resource</artifactId>
             <version>0.0.2</version>
         </dependency>
 2. 加入配置
 
-        <bean class="com.wen.AutoInjectResource">
+        <bean class="AutoInjectResource">
             <!-- 数据源 -->
             <property name="dataSource" ref="dataSource"/>
             <!-- @InjectResource所在的package, 可以是多个(用逗号分隔), 一般为controller层 -->
@@ -58,7 +58,7 @@
         table.column.parent.source=RESOURCE_ID
 >第二种方式:spring属性注入
     
-        <bean class="com.wen.AutoInjectResource">
+        <bean class="AutoInjectResource">
             <property name="tableName" value="m_resource"/>
             <property name="columnUrl" value="RESOURCE_STRING"/>
             <property name="columnName" value="RESOURCE_NAME"/>
@@ -74,7 +74,7 @@
 
 3. 资源名称 + 自定义的可以唯一区别的字段使用
 
-        <bean class="com.wen.AutoInjectResource">
+        <bean class="AutoInjectResource">
             <property name="confirmParentColumns" value="column1,column2"/>
         </bean>
         

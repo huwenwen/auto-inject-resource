@@ -1,6 +1,6 @@
-package com.wen;
+package com.github.huwenwen;
 
-import com.wen.exception.InjectResourceException;
+import com.github.huwenwen.exception.InjectResourceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
