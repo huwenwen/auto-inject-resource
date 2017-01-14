@@ -38,8 +38,8 @@
 
     <distributionManagement>
         <repository>
-            <id>bintray-repo-maven-example</id>
-            <url>https://api.bintray.com/maven/wenwen/mvn-repo/public/;publish=1</url>
+            <id>bintray-mvn-repo</id>
+            <url>https://api.bintray.com/maven/wenwen/mvn-repo/auto-inject-resource/;publish=1</url>
         </repository>
     </distributionManagement>
 </project>

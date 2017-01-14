@@ -9,6 +9,7 @@ import com.wen.util.ReadConfigUtils;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,8 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
   public List<ResourceBean> getNewResource()
       throws InjectResourceException, ClassNotFoundException, SQLException {
     List<ResourceBean> resourceBeanList = getAllInjectResource();
+    // 校验注入的资源是否有重复的
+    checkInjectResourceUnique(resourceBeanList);
     List<ResourceBean> newResourceBeanList = new ArrayList<>();
     // 查询数据库所有资源
     StringBuilder sql = new StringBuilder();
@@ -101,10 +104,6 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
       Map<String, String> parentOtherProps = a.getParentOtherProps();
       StringBuilder temp = new StringBuilder(a.getName());
       for (String confirmParentColumn : confirmParentColumns) {
-        String s = parentOtherProps.get(confirmParentColumn);
-        if(s == null){
-          throw new InjectResourceException("you defined confirmParentColumns [" + confirmParentColumn + "], but not found in annotation [@AutoInjectResource] property [parentOtherProps]");
-        }
         temp.append(parentOtherProps.get(confirmParentColumn));
       }
       if (!originNameList.contains(temp.toString())) {
@@ -112,6 +111,32 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
       }
     }
     return newResourceBeanList;
+  }
+
+
+  /**
+   * 校验注入的资源是否唯一 & 校验自定义确认父节点的字段在注解属性中出现
+   * @param list
+   * @throws InjectResourceException
+   */
+  private void checkInjectResourceUnique(List<ResourceBean> list) throws InjectResourceException {
+    Map<String, String> map = new HashMap<>();
+    for (ResourceBean r : list) {
+      StringBuilder key = new StringBuilder(r.getName());
+      Map<String, String> parentOtherProps = r.getParentOtherProps();
+      for (String confirmParentColumn : confirmParentColumns) {
+        String s = parentOtherProps.get(confirmParentColumn);
+        if(s == null){
+          throw new InjectResourceException("you defined confirmParentColumns [" + confirmParentColumn + "], but not found in annotation [@InjectResource] property [parentOtherProps]");
+        }
+        key.append(s);
+      }
+      if(map.containsKey(key.toString())){
+        throw new InjectResourceException("@InjectResource inject resource not unique, the same name is " + r.getName() + ", please check and modify it");
+      }
+      map.put(key.toString(), "");
+    }
+
   }
 
   /**
