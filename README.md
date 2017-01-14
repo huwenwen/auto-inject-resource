@@ -43,7 +43,7 @@
 >第一种方式:在classpath路径下加入 auto_inject_resource.properties 文件。如下该文件示例
     
         # 资源表名
-        resourceBean.table.name=m_resource
+        resource.table.name=m_resource
         # 资源表对应url的列名
         table.column.url=RESOURCE_STRING
         # 资源表对应名称的列名
