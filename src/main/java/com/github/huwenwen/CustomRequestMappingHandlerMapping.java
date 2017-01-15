@@ -1,5 +1,8 @@
-package com.wen;
+package com.github.huwenwen;
 
+import com.github.huwenwen.annotation.InjectResource;
+import com.github.huwenwen.bean.ResourceBean;
+import com.github.huwenwen.util.CommonUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.servlet.mvc.condition.PatternsRequestCondition;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -18,8 +21,11 @@ import java.util.Set;
  */
 public class CustomRequestMappingHandlerMapping extends RequestMappingHandlerMapping {
 
-  private final List<Resource> resourceList = new ArrayList<>();
+  private final List<ResourceBean> resourceBeanList = new ArrayList<>();
   private boolean filterUrlStartSlash = false;
+  private Map<String, String> defaultCustomProps;
+  private Map<String, String> defaultParentOtherProps;
+  private int noParentGrade = 1;
 
   @Override
   protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
@@ -34,7 +40,7 @@ public class CustomRequestMappingHandlerMapping extends RequestMappingHandlerMap
             if (filterUrlStartSlash && url.startsWith("/")) {
               url = url.substring(1);
             }
-            Resource r = new Resource();
+            ResourceBean r = new ResourceBean();
             if (annotation.url().equals("")) {
               r.setUrl(url);
             } else {
@@ -47,22 +53,26 @@ public class CustomRequestMappingHandlerMapping extends RequestMappingHandlerMap
             }
             r.setGrade(annotation.grade());
             r.setPower(annotation.power());
-            // 自定义属性
-            String[] props = annotation.customProps();
-            if (props.length > 0) {
-              Map<String, String> map = new HashMap<>();
-              for (String prop : props) {
-                String[] split = prop.split(":");
-                if (split.length == 2) {
-                  String key = split[0].trim();
-                  String value = split[1].trim();
-                  map.put(key, value);
-                }
-              }
-              r.setCustomProps(map);
-            }
             r.setParentName(annotation.parentName());
-            resourceList.add(r);
+            // 是否没有父节点
+            if(annotation.grade() == noParentGrade){
+              r.setNoParent(true);
+            }
+            Map<String, String> customMap = new HashMap<>();
+            Map<String, String> parentMap = new HashMap<>();
+            // 默认值
+            if(annotation.enableDefaultCustomProps() && defaultCustomProps != null){
+              customMap.putAll(defaultCustomProps);
+            }
+            if(annotation.enableDefaultParentOtherProps() && defaultParentOtherProps != null){
+              parentMap.putAll(defaultParentOtherProps);
+            }
+            // 自定义属性
+            customMap.putAll(CommonUtils.arrayConvertToMap(annotation.customProps()));
+            parentMap.putAll(CommonUtils.arrayConvertToMap(annotation.parentOtherProps()));
+            r.setCustomProps(customMap);
+            r.setParentOtherProps(parentMap);
+            resourceBeanList.add(r);
           }
         }
       }
@@ -70,11 +80,23 @@ public class CustomRequestMappingHandlerMapping extends RequestMappingHandlerMap
     return mappingForMethod;
   }
 
-  public List<Resource> getResourceList() {
-    return resourceList;
+  public List<ResourceBean> getResourceBeanList() {
+    return resourceBeanList;
   }
 
   public void setFilterUrlStartSlash(boolean filterUrlStartSlash) {
     this.filterUrlStartSlash = filterUrlStartSlash;
+  }
+
+  public void setNoParentGrade(int noParentGrade) {
+    this.noParentGrade = noParentGrade;
+  }
+
+  public void setDefaultCustomProps(Map<String, String> defaultCustomProps) {
+    this.defaultCustomProps = defaultCustomProps;
+  }
+
+  public void setDefaultParentOtherProps(Map<String, String> defaultParentOtherProps) {
+    this.defaultParentOtherProps = defaultParentOtherProps;
   }
 }

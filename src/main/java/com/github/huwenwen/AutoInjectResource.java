@@ -1,11 +1,15 @@
-package com.wen;
+package com.github.huwenwen;
 
+import com.github.huwenwen.bean.ResourceBean;
+import com.github.huwenwen.exception.InjectResourceException;
+import com.github.huwenwen.util.ReadConfigUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +31,14 @@ public class AutoInjectResource {
   private String columnGrade = "grade";
   private String columnParentSource = "id";
   private String columnParent = "parent_id";
+  private String[] otherConfirmUniqueColumns = {};
 
   /**
    * 自动扫描注入resource
    *
    * @throws InjectResourceException
    */
-  public void saveResource() throws InjectResourceException {
+  public List<ResourceBean> saveResource() throws InjectResourceException {
     try {
       String temp;
       if ((temp = ReadConfigUtils.getProperty("resource.table.name")) != null) {
@@ -60,11 +65,15 @@ public class AutoInjectResource {
     } catch (Exception e) {
       logger.warn("you don't hava auto_inject_resource.properties file");
     }
-    List<Resource> newResourceList = getNewResource();
-    List<Resource> nextList = insertResource(newResourceList, 1);
-    if (!nextList.isEmpty()) {
-      insertResource(newResourceList, 2);
+    List<ResourceBean> newResourceBeanList = getNewResource();
+    if(newResourceBeanList.isEmpty()){
+      return newResourceBeanList;
     }
+    List<ResourceBean> nextList = insertResource(newResourceBeanList, 1);
+    if (!nextList.isEmpty()) {
+      insertResource(newResourceBeanList, 2);
+    }
+    return newResourceBeanList;
   }
 
   /**
@@ -72,22 +81,76 @@ public class AutoInjectResource {
    *
    * @return
    */
-  public List<Resource> getNewResource() {
-    List<Resource> resourceList = customRequestMappingHandlerMapping.getResourceList();
-    List<Resource> newResourceList = new ArrayList<>();
+  public List<ResourceBean> getNewResource() throws InjectResourceException {
+    List<ResourceBean> resourceBeanList = customRequestMappingHandlerMapping.getResourceBeanList();
+    // 校验注入的资源是否有重复的
+    checkInjectResourceUnique(resourceBeanList);
+    List<ResourceBean> newResourceBeanList = new ArrayList<>();
     // 查询数据库所有资源
     StringBuilder sql = new StringBuilder();
     sql.append("select ");
     sql.append(columnName);
+    for (String confirmParentColumn : otherConfirmUniqueColumns) {
+      sql.append(",");
+      sql.append(confirmParentColumn);
+    }
     sql.append(" from ");
     sql.append(tableName);
-    List<String> originNameList = jdbcTemplate.queryForList(sql.toString(), String.class);
-    resourceList.stream().forEach(a -> {
-      if (!originNameList.contains(a.getName())) {
-        newResourceList.add(a);
+    List<Map<String, Object>> maps = jdbcTemplate.queryForList(sql.toString());
+    List<String> compareList = new ArrayList<>();
+    for (Map<String, Object> map : maps) {
+      StringBuilder temp = new StringBuilder(map.get(columnName).toString());
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
+        temp.append(map.get(confirmParentColumn).toString());
       }
-    });
-    return newResourceList;
+      compareList.add(temp.toString());
+    }
+
+    for (ResourceBean a : resourceBeanList) {
+      Map<String, String> customProps = a.getCustomProps();
+      StringBuilder temp = new StringBuilder(a.getName());
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
+        temp.append(customProps.get(confirmParentColumn));
+      }
+      if (!compareList.contains(temp.toString())) {
+        newResourceBeanList.add(a);
+      }
+    }
+    return newResourceBeanList;
+  }
+
+  /**
+   * 校验注入的资源是否唯一 & 校验自定义确认父节点的字段在注解属性中出现
+   *
+   * @param list
+   * @throws InjectResourceException
+   */
+  private void checkInjectResourceUnique(List<ResourceBean> list) throws InjectResourceException {
+    Map<String, String> map = new HashMap<>();
+    for (ResourceBean r : list) {
+      StringBuilder key = new StringBuilder(r.getName());
+      Map<String, String> parentOtherProps = r.getParentOtherProps();
+      Map<String, String> customProps = r.getCustomProps();
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
+        String s = parentOtherProps.get(confirmParentColumn);
+        // 对应没有父节点的不校验这点
+        if(r.isNoParent()){
+          s = "";
+        }
+        String custom = customProps.get(confirmParentColumn);
+        if(s == null){
+          throw new InjectResourceException("you defined otherConfirmUniqueColumns [" + confirmParentColumn + "], but not found in annotation [@InjectResource] property [parentOtherProps]");
+        }
+        if(custom == null){
+          throw new InjectResourceException("you defined otherConfirmUniqueColumns [" + confirmParentColumn + "], but not found in annotation [@InjectResource] property [customProps]");
+        }
+        key.append(custom);
+      }
+      if(map.containsKey(key.toString())){
+        throw new InjectResourceException("@InjectResource inject resource not unique, the same name is " + r.getName() + ", please check and modify it");
+      }
+      map.put(key.toString(), "");
+    }
   }
 
   /**
@@ -98,12 +161,13 @@ public class AutoInjectResource {
    * @return
    * @throws InjectResourceException
    */
-  private List<Resource> insertResource(List<Resource> list, int time)
+  private List<ResourceBean> insertResource(List<ResourceBean> list, int time)
       throws InjectResourceException {
-    List<Resource> nextInsertList = new ArrayList<>();
-    for (Resource resource : list) {
+    List<ResourceBean> nextInsertList = new ArrayList<>();
+    for (ResourceBean resourceBean : list) {
       //  查询父节点信息
       StringBuilder sb = new StringBuilder();
+      List<Object> ps = new ArrayList<>();
       sb.append("select ");
       sb.append(columnParentSource);
       sb.append(" from ");
@@ -111,23 +175,29 @@ public class AutoInjectResource {
       sb.append(" where ");
       sb.append(columnName);
       sb.append(" = ?");
+      ps.add(resourceBean.getParentName());
+      Map<String, String> parentOtherProps = resourceBean.getParentOtherProps();
+      for (String confirmParentColumn : otherConfirmUniqueColumns) {
+        sb.append(" and " + confirmParentColumn + " = ?");
+        ps.add(parentOtherProps.get(confirmParentColumn));
+      }
       String parentId;
       // 没有父节点
-      if ("".equals(resource.getParentName())) {
+      if (resourceBean.isNoParent()) {
         parentId = "0";
       } else {
         try {
           parentId =
-              jdbcTemplate.queryForObject(sb.toString(), String.class, resource.getParentName());
+              jdbcTemplate.queryForObject(sb.toString(), String.class, ps.toArray());
           if (parentId == null) {
             if (time > 1) {
               // second time throw exception
               throw new InjectResourceException(
-                  "not found parentId with sql [" + sb.toString() + "] , params is [" + resource
+                  "not found parentId with sql [" + sb.toString() + "] , params is [" + resourceBean
                       .getParentName() + "]");
             }
             // save next to insert
-            nextInsertList.add(resource);
+            nextInsertList.add(resourceBean);
             continue;
           }
         } catch (IncorrectResultSizeDataAccessException e) {
@@ -137,7 +207,7 @@ public class AutoInjectResource {
         }
       }
       StringBuilder sql = new StringBuilder();
-      Map<String, String> customPropMap = resource.getCustomProps();
+      Map<String, String> customPropMap = resourceBean.getCustomProps();
       sql.append("insert into ");
       sql.append(tableName);
       sql.append(" (");
@@ -164,10 +234,10 @@ public class AutoInjectResource {
         sql.append("?,");
       }
       sql.append("?,?,?,?,?)");
-      params.add(resource.getUrl());
-      params.add(resource.getName());
-      params.add(resource.getPower());
-      params.add(resource.getGrade());
+      params.add(resourceBean.getUrl());
+      params.add(resourceBean.getName());
+      params.add(resourceBean.getPower());
+      params.add(resourceBean.getGrade());
       params.add(parentId);
       try {
         jdbcTemplate.update(sql.toString(), params.toArray());
@@ -215,5 +285,9 @@ public class AutoInjectResource {
 
   public void setColumnParent(String columnParent) {
     this.columnParent = columnParent;
+  }
+
+  public void setOtherConfirmUniqueColumns(String[] otherConfirmUniqueColumns) {
+    this.otherConfirmUniqueColumns = otherConfirmUniqueColumns;
   }
 }

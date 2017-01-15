@@ -1,7 +1,7 @@
 ##基于spring mvc 的自动加载权限系统中的资源到数据库
 * 和spring-mvc绑定，暂时只适用使用spring-mvc系统。数据库操作使用spring-jdbc,需要有spring-jdbc配置。
 * 借助于springmvc 中 RequestMappingHandlerMapping项目启动时扫描所有的方法, 自定义一个类继承它, 在扫描方法的同时去把自定义注解中的资源load到静态变量中。
-* 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称来唯一区分
+* 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称 + 你定义字段 唯一区分
 
 ###Getting Start
 1. maven 配置
@@ -14,14 +14,14 @@
         </repositories>
         
         <dependency>
-            <groupId>com.wen</groupId>
-            <artifactId>auto_inject_resource</artifactId>
-            <version>0.0.1-spring</version>
+            <groupId>com.github.huwenwen</groupId>
+            <artifactId>auto-inject-resource</artifactId>
+            <version>0.0.2-spring</version>
         </dependency>
 2. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
 
-        <bean id="customRequestMappingHandlerMapping" class="com.wen.CustomRequestMappingHandlerMapping"/>
-        <bean class="com.wen.AutoInjectResource">
+        <bean id="customRequestMappingHandlerMapping" class="CustomRequestMappingHandlerMapping"/>
+        <bean class="AutoInjectResource">
             <property name="jdbcTemplate" ref="jdbcTemplate"/>
             <property name="customRequestMappingHandlerMapping" ref="customRequestMappingHandlerMapping"/>
         </bean>
@@ -49,7 +49,7 @@
 >第一种方式:在classpath路径下加入 auto_inject_resource.properties 文件。如下该文件示例
     
         # 资源表名
-        resource.table.name=m_resource
+        resourceBean.table.name=m_resource
         # 资源表对应url的列名
         table.column.url=RESOURCE_STRING
         # 资源表对应名称的列名
@@ -64,7 +64,7 @@
         table.column.parent.source=RESOURCE_ID
 >第二种方式:spring属性注入
     
-        <bean class="com.wen.AutoInjectResource">
+        <bean class="AutoInjectResource">
             <property name="tableName" value="m_resource"/>
             <property name="columnUrl" value="RESOURCE_STRING"/>
             <property name="columnName" value="RESOURCE_NAME"/>
@@ -89,7 +89,6 @@
 * 资源grade级别默认为1, 可自定义
     
 ### 缺陷
-* 设计的资源表必须是要以资源名称来唯一区别的
 * 资源名称如果修改，下次这个资源还会再次保存在数据库
 
 ### DEMO
