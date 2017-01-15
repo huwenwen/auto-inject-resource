@@ -182,11 +182,8 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
             if(annotation.grade() == noParentGrade){
               r.setNoParent(true);
             }
-            // 自定义属性
-            Map<String, String> customMap =
-                CommonUtils.arrayConvertToMap(annotation.customProps());
-            Map<String, String> parentMap =
-                CommonUtils.arrayConvertToMap(annotation.parentOtherProps());
+            Map<String, String> customMap = new HashMap<>();
+            Map<String, String> parentMap = new HashMap<>();
             // 默认值
             if(annotation.enableDefaultCustomProps() && defaultCustomProps != null){
               customMap.putAll(defaultCustomProps);
@@ -194,6 +191,9 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
             if(annotation.enableDefaultParentOtherProps() && defaultParentOtherProps != null){
               parentMap.putAll(defaultParentOtherProps);
             }
+            // 自定义属性
+            customMap.putAll(CommonUtils.arrayConvertToMap(annotation.customProps()));
+            parentMap.putAll(CommonUtils.arrayConvertToMap(annotation.parentOtherProps()));
             r.setCustomProps(customMap);
             r.setParentOtherProps(parentMap);
             resourceBeanList.add(r);

@@ -105,6 +105,10 @@
         </bean>
    
    如上注入全局生效。如果你想某个注入的资源不生效, 你可以这么使用@InjectResource(enableDefaultCustomProps = false, enableDefaultParentOtherProps = false)
+
+5. 就近原则
+
+      全局的customProps和parentOtherProps的注入 和 局部@InjectResource(customProps={}, parentOtherProps={})有相同的key, 局部的优先级高。
      
 ## 缺陷
 * 通过注入的资源, 资源名称不能修改。资源名称如果修改，下次这个资源还会再次保存在数据库。
