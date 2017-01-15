@@ -1,6 +1,6 @@
 package com.github.huwenwen;
 
-import com.github.huwenwen.annontation.InjectResource;
+import com.github.huwenwen.annotation.InjectResource;
 import com.github.huwenwen.bean.ResourceBean;
 import com.github.huwenwen.exception.InjectResourceException;
 import com.github.huwenwen.util.CommonUtils;
@@ -106,10 +106,10 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
     sql.append(tableName);
     List<String> originNameList = getList(sql.toString(), 1 + otherConfirmUniqueColumns.length);
     for (ResourceBean a : resourceBeanList) {
-      Map<String, String> parentOtherProps = a.getParentOtherProps();
+      Map<String, String> customProps = a.getCustomProps();
       StringBuilder temp = new StringBuilder(a.getName());
       for (String confirmParentColumn : otherConfirmUniqueColumns) {
-        temp.append(parentOtherProps.get(confirmParentColumn));
+        temp.append(customProps.get(confirmParentColumn));
       }
       if (!originNameList.contains(temp.toString())) {
         newResourceBeanList.add(a);
@@ -235,7 +235,7 @@ public class AutoInjectResource extends InjectResourceAnnotationsHandler {
 
       String parentId;
       // 没有父节点
-      if ("".equals(resourceBean.getParentName())) {
+      if (resourceBean.isNoParent()) {
         parentId = "0";
       } else {
         try {
