@@ -18,7 +18,7 @@
             <artifactId>auto-inject-resource</artifactId>
             <version>0.0.2-spring</version>
         </dependency>
-2. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
+2. 在 spring-mvc.xml加入配置(注意必须是spring servlet配置中加入)
 
         <bean id="customRequestMappingHandlerMapping" class="CustomRequestMappingHandlerMapping"/>
         <bean class="AutoInjectResource">
@@ -26,7 +26,7 @@
             <property name="customRequestMappingHandlerMapping" ref="customRequestMappingHandlerMapping"/>
         </bean>
 注意:
-    applicationContext.xml 需要有jdbcTemplate(spring-jdbc)注入,示例如下
+    applicationContext.xml(spring上下文配置) 需要有jdbcTemplate(spring-jdbc)注入,示例如下
     
         <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
             <property name="dataSource" ref="dataSource" />
