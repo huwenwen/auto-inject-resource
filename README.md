@@ -1,9 +1,9 @@
-#自动加载权限系统中的资源到数据库
+# 自动加载权限系统中的资源到数据库
 * 适用的javaWeb后台系统: 资源表的设计必须可以用 资源名称 + 你定义的字段 来唯一区分
 * 用唯一区别的字段来寻找父节点
 * 如果你的系统使用springMvc, 你可以使用[spring版本](https://github.com/huwenwen/auto_inject_resource/tree/spring)
 
-##Getting Start
+## Getting Start
 1. maven 配置
         
         <repositories>
