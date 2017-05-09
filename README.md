@@ -1,9 +1,9 @@
-##基于spring mvc 的自动加载权限系统中的资源到数据库
+## 基于spring mvc 的自动加载权限系统中的资源到数据库
 * 和spring-mvc绑定，暂时只适用使用spring-mvc系统。数据库操作使用spring-jdbc,需要有spring-jdbc配置。
 * 借助于springmvc 中 RequestMappingHandlerMapping项目启动时扫描所有的方法, 自定义一个类继承它, 在扫描方法的同时去把自定义注解中的资源load到静态变量中。
 * 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称 + 你定义字段 唯一区分
 
-###Getting Start
+### Getting Start
 1. maven 配置
         
         <repositories>
