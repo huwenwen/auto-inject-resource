@@ -3,16 +3,17 @@ package com.github.huwenwen;
 import com.github.huwenwen.bean.ResourceBean;
 import com.github.huwenwen.exception.InjectResourceException;
 import com.github.huwenwen.util.ReadConfigUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * @author huwenwen
@@ -116,6 +117,8 @@ public class AutoInjectResource {
         newResourceBeanList.add(a);
       }
     }
+    // 根据级别排序
+    Collections.sort(newResourceBeanList, Comparator.comparingInt(ResourceBean::getGrade));
     return newResourceBeanList;
   }
 

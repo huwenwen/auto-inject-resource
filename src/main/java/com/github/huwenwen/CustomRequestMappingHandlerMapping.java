@@ -37,11 +37,13 @@ public class CustomRequestMappingHandlerMapping extends RequestMappingHandlerMap
         if (patternsCondition != null) {
           Set<String> patterns = patternsCondition.getPatterns();
           for (String url : patterns) {
+            // url中出现2个以上斜杠去重
+            url = url.replaceAll("/{2,}", "/");
             if (filterUrlStartSlash && url.startsWith("/")) {
               url = url.substring(1);
             }
             ResourceBean r = new ResourceBean();
-            if (annotation.url().equals("")) {
+            if (annotation.url().equals("NULL")) {
               r.setUrl(url);
             } else {
               r.setUrl(annotation.url());
