@@ -1,9 +1,9 @@
-##基于spring mvc 的自动加载权限系统中的资源到数据库
+## 基于spring mvc 的自动加载权限系统中的资源到数据库
 * 和spring-mvc绑定，暂时只适用使用spring-mvc系统。数据库操作使用spring-jdbc,需要有spring-jdbc配置。
 * 借助于springmvc 中 RequestMappingHandlerMapping项目启动时扫描所有的方法, 自定义一个类继承它, 在扫描方法的同时去把自定义注解中的资源load到静态变量中。
 * 适用于spring-mvc的后台系统, 资源表的设计必须可以用资源名称 + 你定义字段 唯一区分
 
-###Getting Start
+### Getting Start
 1. maven 配置
         
         <repositories>
@@ -18,7 +18,7 @@
             <artifactId>auto-inject-resource</artifactId>
             <version>0.0.2-spring</version>
         </dependency>
-2. 在 spring-mvc.xml加入配置(注意必须是spring-mvc中加入)
+2. 在 spring-mvc.xml加入配置(注意必须是spring servlet配置中加入)
 
         <bean id="customRequestMappingHandlerMapping" class="CustomRequestMappingHandlerMapping"/>
         <bean class="AutoInjectResource">
@@ -26,7 +26,7 @@
             <property name="customRequestMappingHandlerMapping" ref="customRequestMappingHandlerMapping"/>
         </bean>
 注意:
-    applicationContext.xml 需要有jdbcTemplate(spring-jdbc)注入,示例如下
+    applicationContext.xml(spring上下文配置) 需要有jdbcTemplate(spring-jdbc)注入,示例如下
     
         <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
             <property name="dataSource" ref="dataSource" />
